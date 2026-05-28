@@ -1,0 +1,7 @@
+{
+  "countdown": {
+    "targetDate": null,
+    "timezone": "America/Sao_Paulo",
+    "enabled": true
+  }
+}
