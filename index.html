@@ -279,6 +279,15 @@
       font-weight: 500;
     }
 
+    .target-date-note {
+      text-align: center;
+      margin-top: 6px;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
     .status {
       text-align: center;
       min-height: 24px;
@@ -316,8 +325,8 @@
   <div class="heart-layer" id="heartLayer" aria-hidden="true"></div>
 
   <main class="container" role="main">
-    <h1>Será liberado em breve</h1>
-    <p class="subtitle">Avisaremos quando a equipe definir uma data</p>
+    <h1>Data confirmada 🥳</h1>
+    <p class="subtitle">Já temos uma previsão e a contagem regressiva começou! acompanhe a pagina diariamente para não perder nada.</p>
 
     <section class="timer" aria-label="Contagem regressiva">
       <article class="time-box">
@@ -338,6 +347,8 @@
       </article>
     </section>
 
+    <p class="target-date-note" id="targetDateText"></p>
+
 
     <section class="road-scene" aria-label="Logística em andamento">
       <div class="truck" aria-hidden="true">
@@ -350,8 +361,7 @@
       <div class="road"></div>
     </section>
 
-    <p class="logistics-note">A equipe de logística está trabalhando no seu pacote para Tão Tão Distante, em breve divulgaremos novas informações.</p>
-    <p class="status" id="statusText">Carregando configuração...</p>
+    <p class="logistics-note">A equipe de logística está trabalhando para a entrega do seu pacote em Tão Tão Distante. Beba uma água enquanto aguarda.</p>
   </main>
 
   <script>
@@ -362,6 +372,7 @@
         minutes: document.getElementById("minutes"),
         seconds: document.getElementById("seconds"),
         statusText: document.getElementById("statusText"),
+        targetDateText: document.getElementById("targetDateText"),
         heartLayer: document.getElementById("heartLayer")
       };
 
@@ -388,7 +399,7 @@
         ids.statusText.classList.toggle("done", done);
       }
 
-      async function loadConfigDate() {
+      async function loadCountdownEnabled() {
         try {
           const response = await fetch("./config.json", { cache: "no-store" });
           if (!response.ok) {
@@ -396,27 +407,65 @@
           }
 
           const data = await response.json();
-          const isEnabled = data?.countdown?.enabled !== false;
-
-          if (!isEnabled) {
-            return null;
-          }
-
-          const configuredDate = data?.countdown?.targetDate;
-          if (!configuredDate) {
-            throw new Error("Campo countdown.targetDate não encontrado em config.json.");
-          }
-
-          const parsedDate = new Date(configuredDate);
-          if (Number.isNaN(parsedDate.getTime())) {
-            throw new Error("Data inválida em countdown.targetDate.");
-          }
-
-          return parsedDate;
+          return data?.countdown?.enabled !== false;
         } catch (error) {
           console.error("Erro ao carregar config.json:", error);
-          return null;
+          return true;
         }
+      }
+
+      function getTodayKey() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = pad(now.getMonth() + 1);
+        const day = pad(now.getDate());
+        return `${year}-${month}-${day}`;
+      }
+
+      function createDailyRandomTargetDate() {
+        const now = new Date();
+        const startDay = new Date(now);
+        startDay.setHours(0, 0, 0, 0);
+
+        const maxDay = new Date(startDay);
+        maxDay.setMonth(maxDay.getMonth() + 2);
+
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const totalDays = Math.floor((maxDay.getTime() - startDay.getTime()) / msPerDay);
+        const randomOffset = Math.floor(Math.random() * (totalDays + 1));
+
+        const target = new Date(startDay);
+        target.setDate(target.getDate() + randomOffset);
+        target.setHours(23, 59, 59, 999);
+
+        return target;
+      }
+
+      function getDailyRandomTargetDate() {
+        const todayKey = getTodayKey();
+        const storedDayKey = localStorage.getItem("countdown_day_key");
+        const storedTargetIso = localStorage.getItem("countdown_target_iso");
+
+        if (storedDayKey === todayKey && storedTargetIso) {
+          const storedTarget = new Date(storedTargetIso);
+          if (!Number.isNaN(storedTarget.getTime())) {
+            return storedTarget;
+          }
+        }
+
+        const newTarget = createDailyRandomTargetDate();
+        localStorage.setItem("countdown_day_key", todayKey);
+        localStorage.setItem("countdown_target_iso", newTarget.toISOString());
+        return newTarget;
+      }
+
+      function renderTargetDate() {
+        if (!targetDate) {
+          ids.targetDateText.textContent = "";
+          return;
+        }
+
+        ids.targetDateText.textContent = `${targetDate.toLocaleDateString("pt-BR")}`;
       }
 
       function updateCountdown() {
@@ -443,11 +492,12 @@
         const seconds = totalSeconds % 60;
 
         setClock(days, hours, minutes, seconds);
-        renderStatus(`Contagem ativa até ${targetDate.toLocaleString("pt-BR")}.`);
+        renderStatus("");
       }
 
       function startTimer() {
         if (timer) clearInterval(timer);
+        renderTargetDate();
         updateCountdown();
         timer = setInterval(updateCountdown, 1000);
       }
@@ -484,7 +534,8 @@
         resetClock();
         startHearts();
 
-        targetDate = await loadConfigDate();
+        const isEnabled = await loadCountdownEnabled();
+        targetDate = isEnabled ? getDailyRandomTargetDate() : null;
         startTimer();
       }
 
