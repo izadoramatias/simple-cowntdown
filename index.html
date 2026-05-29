@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liberado em Breve</title>
+  <title>Será liberado em breve</title>
   <style>
     :root {
       --bg: #fff6fa;
@@ -89,6 +89,40 @@
       }
     }
 
+    @keyframes laneMove {
+      from {
+        transform: translate(-58px, -50%);
+      }
+      to {
+        transform: translate(0, -50%);
+      }
+    }
+
+    @keyframes truckDrive {
+      0% {
+        left: -130px;
+        bottom: 43px;
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-1px);
+      }
+      100% {
+        left: calc(100% + 20px);
+        bottom: 43px;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes wheelSpin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .container {
       width: min(760px, 100%);
       background: var(--card);
@@ -150,13 +184,99 @@
       color: var(--muted);
     }
 
-    .compact-format {
+    .road-scene {
+      position: relative;
+      height: 116px;
+      margin: 18px 0 14px;
+      border-radius: 18px;
+      border: 1px solid #ffd6e6;
+      background: linear-gradient(180deg, #ffeef7 0 46%, #f6bfd6 46% 100%);
+      overflow: hidden;
+    }
+
+    .road {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 42px;
+      background: #cc8aa8;
+    }
+
+    .road::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: -120px;
+      width: calc(100% + 240px);
+      height: 4px;
+      transform: translateY(-50%);
+      background: repeating-linear-gradient(90deg, #fff 0 34px, transparent 34px 58px);
+      animation: laneMove 2.4s linear infinite;
+      opacity: 0.9;
+    }
+
+    .truck {
+      position: absolute;
+      left: -130px;
+      width: 112px;
+      height: 36px;
+      animation: truckDrive 8.5s linear infinite;
+      z-index: 2;
+    }
+
+    .truck-body {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 70px;
+      height: 20px;
+      border-radius: 6px;
+      background: #ff9fc1;
+      border: 1px solid #e57ea5;
+    }
+
+    .truck-cabin {
+      position: absolute;
+      bottom: 8px;
+      left: 68px;
+      width: 32px;
+      height: 20px;
+      border-radius: 6px 8px 6px 4px;
+      background: #ffd4e5;
+      border: 1px solid #e59bb9;
+    }
+
+    .wheel {
+      position: absolute;
+      bottom: 0;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #74465a;
+      border: 2px solid #f9d3e2;
+      animation: wheelSpin 0.8s linear infinite;
+    }
+
+    .wheel.left {
+      left: 15px;
+    }
+
+    .wheel.center {
+      left: 46px;
+    }
+
+    .wheel.right {
+      left: 79px;
+    }
+
+    .logistics-note {
       text-align: center;
-      margin: 14px 0 10px;
-      color: var(--primary);
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-      font-size: clamp(1rem, 2.6vw, 1.2rem);
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      font-weight: 500;
     }
 
     .status {
@@ -196,8 +316,8 @@
   <div class="heart-layer" id="heartLayer" aria-hidden="true"></div>
 
   <main class="container" role="main">
-    <h1>Liberado em Breve</h1>
-    <p class="subtitle">preparada?</p>
+    <h1>Será liberado em breve</h1>
+    <p class="subtitle">Avisaremos quando a equipe definir uma data</p>
 
     <section class="timer" aria-label="Contagem regressiva">
       <article class="time-box">
@@ -218,7 +338,19 @@
       </article>
     </section>
 
-    <p class="compact-format" id="compactClock">00:00:00:00</p>
+
+    <section class="road-scene" aria-label="Logística em andamento">
+      <div class="truck" aria-hidden="true">
+        <span class="truck-body"></span>
+        <span class="truck-cabin"></span>
+        <span class="wheel left"></span>
+        <span class="wheel center"></span>
+        <span class="wheel right"></span>
+      </div>
+      <div class="road"></div>
+    </section>
+
+    <p class="logistics-note">A equipe de logística está trabalhando no seu pacote para Tão Tão Distante, em breve divulgaremos novas informações.</p>
     <p class="status" id="statusText">Carregando configuração...</p>
   </main>
 
@@ -229,7 +361,6 @@
         hours: document.getElementById("hours"),
         minutes: document.getElementById("minutes"),
         seconds: document.getElementById("seconds"),
-        compactClock: document.getElementById("compactClock"),
         statusText: document.getElementById("statusText"),
         heartLayer: document.getElementById("heartLayer")
       };
@@ -246,7 +377,6 @@
         ids.hours.textContent = pad(hours);
         ids.minutes.textContent = pad(minutes);
         ids.seconds.textContent = pad(seconds);
-        ids.compactClock.textContent = `${pad(days)}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
       }
 
       function resetClock() {
@@ -292,7 +422,7 @@
       function updateCountdown() {
         if (!targetDate) {
           resetClock();
-          renderStatus("Em breve uma data será definida.");
+          renderStatus("Rufem os tambores.");
           return;
         }
 
